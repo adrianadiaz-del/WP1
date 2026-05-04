@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Drag & Drop Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#0F1923;
+  --ink2:#3D4F5E;
+  --ink3:#7A8E9B;
+  --paper:#F5F3EE;
+  --surface:#FFFFFF;
+  --border:#DDD9D0;
+  --border2:#C5BFB3;
+  --blue:#1A6CF0;
+  --blue-light:#EAF1FF;
+  --blue-mid:#C2D7FF;
+  --green:#0D7A4E;
+  --green-light:#E6F7F0;
+  --green-mid:#A3DFC4;
+  --red:#C0392B;
+  --red-light:#FDEEEC;
+  --red-mid:#F5B8B2;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.10);
+  --shadow-drag:0 12px 40px rgba(0,0,0,0.18),0 2px 8px rgba(0,0,0,0.10);
+  --r:10px;
+  --r-lg:14px;
+}
+
+body{
+  font-family:'IBM Plex Sans',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  min-height:100vh;
+  padding:0;
+  overflow-x:hidden;
+}
+
+.assessment-header{
+  background:var(--ink);
+  padding:22px 32px 20px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.header-title{ font-family:'Sora',sans-serif; }
+
+.header-tag{
+  display:inline-block;
+  font-size:10px;font-weight:600;
+  letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--blue-mid);margin-bottom:6px;
+}
+
+.header-title h1{
+  font-size:20px;font-weight:700;
+  color:#FFFFFF;line-height:1.25;margin-bottom:4px;
+}
+
+.header-title p{
+  font-size:13px;color:#8FA3B4;
+  line-height:1.5;max-width:480px;
+}
+
+.progress-wrap{
+  display:flex;flex-direction:column;
+  align-items:flex-end;gap:6px;min-width:100px;
+}
+
+.progress-label{ font-size:11px;color:#8FA3B4;font-weight:500;white-space:nowrap; }
+
+.progress-bar-track{
+  width:120px;height:5px;
+  background:rgba(255,255,255,0.12);
+  border-radius:99px;overflow:hidden;
+}
+
+.progress-bar-fill{
+  height:100%;background:var(--blue);
+  border-radius:99px;transition:width 0.35s ease;width:0%;
+}
+
+.main{
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:0;
+  min-height:calc(100vh - 84px);
+}
+
+@media(max-width:780px){
+  .main{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .sidebar{border-left:none;border-top:1px solid var(--border)}
+}
+
+.map-area{ padding:28px 28px 100px;position:relative; }
+
+.map-instruction{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:20px;font-size:13px;color:var(--ink2);
+}
+
+.map-instruction .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--blue);flex-shrink:0;
+  animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.5;transform:scale(1.3)}
+}
+
+.map-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:14px;
+}
+
+.map-node{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-sm);
+  overflow:hidden;
+  transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s;
+  position:relative;
+}
+
+.node-header{
+  background:var(--ink);
+  padding:10px 14px;
+  display:flex;align-items:center;gap:8px;
+}
+
+.node-number{
+  width:20px;height:20px;border-radius:50%;
+  background:rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Sora',sans-serif;font-size:10px;font-weight:700;
+  color:#fff;flex-shrink:0;
+}
+
+.node-name{
+  font-family:'Sora',sans-serif;font-size:12px;
+  font-weight:600;color:#FFFFFF;letter-spacing:0.02em;
+}
+
+.drop-zone{
+  min-height:72px;padding:10px 12px;
+  display:flex;align-items:center;
+  transition:background 0.15s,border-color 0.2s;
+  position:relative;
+}
+
+.drop-placeholder{
+  font-size:11px;color:var(--ink3);
+  font-style:italic;pointer-events:none;
+  display:flex;align-items:center;gap:6px;
+}
+
+.drop-placeholder svg{ opacity:0.4;flex-shrink:0; }
+
+.map-node.drag-over{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px var(--blue-mid),var(--shadow-md);
+  transform:scale(1.01);
+}
+
+.map-node.drag-over .drop-zone{ background:var(--blue-light); }
+.map-node.filled .drop-zone{ background:var(--green-light); }
+.map-node.filled{ border-color:var(--green-mid); }
+
+/* Wrong answer — shake and highlight red, but stays editable */
+.map-node.wrong .drop-zone{
+  background:var(--red-light);
+  animation:shake 0.45s ease;
+}
+.map-node.wrong{ border-color:var(--red-mid); }
+
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-3px)}
+  80%{transform:translateX(3px)}
+}
+
+/* Correct — locked green, no remove button */
+.map-node.correct-locked .drop-zone{ background:var(--green-light); }
+.map-node.correct-locked{ border-color:var(--green-mid); }
+.map-node.correct-locked .remove-btn{ display:none !important; }
+
+.placed-chip{
+  font-size:12px;line-height:1.55;
+  color:var(--ink);font-weight:500;
+  position:relative;padding-right:22px;
+  cursor:default;
+}
+
+.placed-chip .remove-btn{
+  position:absolute;right:-4px;top:0;
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(0,0,0,0.08);border:none;
+  cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-size:10px;
+  color:var(--ink2);transition:background 0.15s;padding:0;
+}
+
+.placed-chip .remove-btn:hover{ background:rgba(0,0,0,0.18); }
+
+.result-badge{
+  position:absolute;top:8px;right:8px;
+  width:22px;height:22px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;
+}
+
+.map-node.correct-locked .result-badge{
+  display:flex;background:var(--green);color:#fff;
+}
+
+.sidebar{
+  background:var(--surface);
+  border-left:1px solid var(--border);
+  padding:24px 20px;
+  display:flex;flex-direction:column;gap:16px;
+  position:sticky;top:0;
+  height:calc(100vh - 84px);overflow-y:auto;
+}
+
+.sidebar-label{
+  font-family:'Sora',sans-serif;font-size:11px;
+  font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--ink3);padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+
+.chips-pool{ display:flex;flex-direction:column;gap:8px;flex:1; }
+
+.chip{
+  background:var(--paper);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:11px 12px 11px 36px;
+  font-size:12px;line-height:1.55;color:var(--ink);
+  cursor:grab;user-select:none;box-shadow:var(--shadow-sm);
+  transition:border-color 0.15s,background 0.15s,box-shadow 0.15s,opacity 0.2s;
+  position:relative;
+}
+
+.chip::before{
+  content:'';position:absolute;left:12px;top:50%;
+  transform:translateY(-50%);width:14px;height:14px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A8E9B' stroke-width='2'%3E%3Ccircle cx='9' cy='7' r='1' fill='%237A8E9B'/%3E%3Ccircle cx='15' cy='7' r='1' fill='%237A8E9B'/%3E%3Ccircle cx='9' cy='12' r='1' fill='%237A8E9B'/%3E%3Ccircle cx='15' cy='12' r='1' fill='%237A8E9B'/%3E%3Ccircle cx='9' cy='17' r='1' fill='%237A8E9B'/%3E%3Ccircle cx='15' cy='17' r='1' fill='%237A8E9B'/%3E%3C/svg%3E");
+  background-size:contain;background-repeat:no-repeat;opacity:0.6;
+}
+
+.chip:hover{ border-color:var(--border2);box-shadow:var(--shadow-md);background:#EDEAE4; }
+.chip.is-dragging{ opacity:0.3; }
+.chip.used{ opacity:0.3;pointer-events:none; }
+
+.footer-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(245,243,238,0.96);
+  backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  padding:14px 28px;
+  display:flex;align-items:center;
+  justify-content:space-between;gap:12px;z-index:100;
+}
+
+.footer-hint{ font-size:12px;color:var(--ink3); }
+.footer-hint strong{ color:var(--ink2);font-weight:600; }
+
+.btn-row{ display:flex;gap:8px; }
+
+.btn{
+  font-family:'Sora',sans-serif;font-size:13px;font-weight:600;
+  border-radius:var(--r);padding:10px 20px;border:none;
+  cursor:pointer;transition:opacity 0.15s,transform 0.1s,background 0.15s;
+  letter-spacing:0.01em;
+}
+
+.btn:active{ transform:scale(0.97); }
+
+.btn-secondary{
+  background:var(--surface);border:1.5px solid var(--border);color:var(--ink2);
+}
+.btn-secondary:hover{ border-color:var(--border2);color:var(--ink); }
+
+.btn-primary{ background:var(--ink);color:#fff; }
+.btn-primary:hover{ opacity:0.82; }
+.btn-primary:disabled{
+  background:var(--border);color:var(--ink3);
+  cursor:not-allowed;opacity:1;transform:none;
+}
+
+/* ── INLINE FEEDBACK BANNER (replaces modal) ── */
+.feedback-banner{
+  display:none;
+  border-radius:var(--r-lg);
+  padding:16px 20px;
+  margin:0 0 20px;
+  font-size:13px;
+  line-height:1.6;
+  border:1.5px solid;
+}
+
+.feedback-banner.show{ display:block; }
+
+.feedback-banner.wrong-banner{
+  background:var(--red-light);
+  border-color:var(--red-mid);
+  color:var(--red);
+}
+
+.feedback-banner.success-banner{
+  background:var(--green-light);
+  border-color:var(--green-mid);
+  color:var(--green);
+}
+
+.feedback-banner strong{
+  display:block;
+  font-family:'Sora',sans-serif;
+  font-size:14px;
+  font-weight:700;
+  margin-bottom:4px;
+}
+
+/* ── CONFETTI ── */
+.confetti-container{
+  position:fixed;inset:0;pointer-events:none;z-index:300;overflow:hidden;
+}
+
+.confetti-piece{
+  position:absolute;width:8px;height:8px;
+  top:-10px;animation:confettiFall linear forwards;border-radius:1px;
+}
+
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1}
+  100%{transform:translateY(110vh) rotate(720deg);opacity:0}
+}
+
+/* Touch ghost */
+#touch-ghost{
+  position:fixed;pointer-events:none;z-index:9999;
+  opacity:0.9;transform:rotate(2deg) scale(1.05);
+  box-shadow:var(--shadow-drag);display:none;max-width:280px;
+}
+</style>
+</head>
+<body>
+
+<header class="assessment-header">
+  <div class="header-title">
+    <div class="header-tag">Interactive Assessment</div>
+    <h1>Machine Parts — Function Identification</h1>
+    <p>Drag each description card and drop it onto the correct machine part. You must get <strong style="color:#fff">all answers correct</strong> to continue.</p>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span id="placed-count">0</span> of <span id="total-count">0</span> placed</div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="map-area">
+    <div class="map-instruction">
+      <div class="dot"></div>
+      Drop description cards onto each machine part below
+    </div>
+
+    <!-- Feedback banner lives here, above the grid -->
+    <div class="feedback-banner" id="feedback-banner"></div>
+
+    <div class="map-grid" id="map-grid"></div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-label">Description Cards</div>
+    <div class="chips-pool" id="chips-pool"></div>
+  </aside>
+</div>
+
+<div class="footer-bar">
+  <div class="footer-hint">
+    <strong id="footer-placed">0</strong> of <strong id="footer-total">0</strong> placed —
+    <span id="footer-msg">fill all slots then check your answers</span>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" id="btn-reset">Reset</button>
+    <button class="btn btn-primary" id="btn-submit" disabled>Check Answers</button>
+  </div>
+</div>
+
+<div class="confetti-container" id="confetti-container"></div>
+<div class="chip" id="touch-ghost"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ✏️  EDIT YOUR CONTENT HERE
+//  Each entry needs: id, partName, description
+//  The id links a partName to its correct description.
+// ═══════════════════════════════════════════════════
+const PAIRS = [
+  {
+    id: "crankshaft",
+    partName: "Crankshaft",
+    description: "Converts the reciprocating linear motion of the pistons into the rotational motion needed to drive the transmission and ultimately the wheels."
+  },
+  {
+    id: "camshaft",
+    partName: "Camshaft",
+    description: "Controls the precise timing and duration of intake and exhaust valve openings, synchronising the engine's breathing with each combustion cycle."
+  },
+  {
+    id: "flywheel",
+    partName: "Flywheel",
+    description: "Stores rotational kinetic energy to smooth out power pulses between combustion strokes and provides the inertia needed for stable idle operation."
+  },
+  {
+    id: "turbocharger",
+    partName: "Turbocharger",
+    description: "Harnesses exhaust gas energy to spin a turbine that compresses the intake air charge, forcing more oxygen into cylinders for greater power output."
+  },
+  {
+    id: "governor",
+    partName: "Governor",
+    description: "Automatically regulates engine speed by sensing RPM and adjusting the fuel supply, preventing the engine from exceeding its safe operating limit."
+  },
+  {
+    id: "intercooler",
+    partName: "Intercooler",
+    description: "Cools the compressed air from the turbocharger before it enters the engine, increasing air density and reducing the risk of pre-ignition."
+  }
+];
+// ═══════════════════════════════════════════════════
+
+const state = {};           // zoneId → chipId
+const correctLocked = {};   // zoneId → true once correctly placed
+let draggingChipId = null;
+let touchChipId = null;
+let submitted = false;
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// ── BUILD ────────────────────────────────────────
+
+function buildUI(){
+  submitted = false;
+  document.getElementById('map-grid').innerHTML='';
+  document.getElementById('chips-pool').innerHTML='';
+  document.getElementById('total-count').textContent=PAIRS.length;
+  document.getElementById('footer-total').textContent=PAIRS.length;
+  document.getElementById('footer-msg').textContent='fill all slots then check your answers';
+  hideFeedback();
+  updateProgress();
+  updateSubmitBtn();
+
+  PAIRS.forEach((pair,i)=>{
+    const node=document.createElement('div');
+    node.className='map-node';
+    node.id='node-'+pair.id;
+    node.dataset.zoneId=pair.id;
+    node.innerHTML=`
+      <div class="node-header">
+        <div class="node-number">${i+1}</div>
+        <div class="node-name">${pair.partName}</div>
+      </div>
+      <div class="drop-zone" id="zone-${pair.id}">
+        <div class="drop-placeholder">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          Drop description here
+        </div>
+      </div>
+      <div class="result-badge" id="badge-${pair.id}"></div>
+    `;
+    node.addEventListener('dragover',onDragOver);
+    node.addEventListener('dragleave',onDragLeave);
+    node.addEventListener('drop',onDrop);
+    document.getElementById('map-grid').appendChild(node);
+  });
+
+  shuffle(PAIRS).forEach(pair=>{
+    const chip=document.createElement('div');
+    chip.className='chip';
+    chip.id='chip-'+pair.id;
+    chip.dataset.chipId=pair.id;
+    chip.textContent=pair.description;
+    chip.draggable=true;
+    chip.addEventListener('dragstart',onDragStart);
+    chip.addEventListener('dragend',onDragEnd);
+    chip.addEventListener('touchstart',onTouchStart,{passive:false});
+    document.getElementById('chips-pool').appendChild(chip);
+  });
+}
+
+// ── DRAG ─────────────────────────────────────────
+
+function onDragStart(e){
+  draggingChipId=e.currentTarget.dataset.chipId;
+  e.currentTarget.classList.add('is-dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+
+function onDragEnd(e){
+  e.currentTarget.classList.remove('is-dragging');
+  draggingChipId=null;
+}
+
+function onDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  const node=e.currentTarget.closest('.map-node');
+  if(node&&!correctLocked[node.dataset.zoneId]) node.classList.add('drag-over');
+}
+
+function onDragLeave(e){
+  const node=e.currentTarget.closest('.map-node')||e.currentTarget;
+  if(!node.contains(e.relatedTarget)) node.classList.remove('drag-over');
+}
+
+function onDrop(e){
+  e.preventDefault();
+  const node=e.currentTarget.closest('.map-node')||e.currentTarget;
+  node.classList.remove('drag-over');
+  if(draggingChipId) placeChip(node.dataset.zoneId, draggingChipId);
+}
+
+// ── TOUCH ────────────────────────────────────────
+
+const ghost=document.getElementById('touch-ghost');
+let lastTouchNode=null;
+
+function onTouchStart(e){
+  const chip=e.currentTarget;
+  touchChipId=chip.dataset.chipId;
+  e.preventDefault();
+  ghost.textContent=chip.textContent;
+  ghost.style.display='block';
+  moveTouchGhost(e.touches[0]);
+  document.addEventListener('touchmove',onTouchMove,{passive:false});
+  document.addEventListener('touchend',onTouchEnd);
+}
+
+function onTouchMove(e){
+  e.preventDefault();
+  const t=e.touches[0];
+  moveTouchGhost(t);
+  ghost.style.display='none';
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  ghost.style.display='block';
+  document.querySelectorAll('.map-node').forEach(n=>n.classList.remove('drag-over'));
+  const node=el&&el.closest('.map-node');
+  if(node&&!correctLocked[node.dataset.zoneId]) node.classList.add('drag-over');
+  lastTouchNode=node&&!correctLocked[node.dataset.zoneId]?node:null;
+}
+
+function onTouchEnd(e){
+  document.removeEventListener('touchmove',onTouchMove);
+  document.removeEventListener('touchend',onTouchEnd);
+  ghost.style.display='none';
+  document.querySelectorAll('.map-node').forEach(n=>n.classList.remove('drag-over'));
+  if(lastTouchNode&&touchChipId) placeChip(lastTouchNode.dataset.zoneId,touchChipId);
+  touchChipId=null; lastTouchNode=null;
+}
+
+function moveTouchGhost(touch){
+  ghost.style.left=(touch.clientX-ghost.offsetWidth/2)+'px';
+  ghost.style.top=(touch.clientY-30)+'px';
+}
+
+// ── PLACE ────────────────────────────────────────
+
+function placeChip(zoneId, chipId){
+  if(!chipId||!zoneId) return;
+  // Cannot touch a correctly-locked zone
+  if(correctLocked[zoneId]) return;
+
+  // Return chip already in this zone
+  if(state[zoneId]) returnChip(state[zoneId]);
+
+  // Pull chip back from wherever it was before
+  const prevZone=Object.keys(state).find(z=>state[z]===chipId);
+  if(prevZone&&!correctLocked[prevZone]){
+    delete state[prevZone];
+    const prevNode=document.getElementById('node-'+prevZone);
+    if(prevNode){
+      prevNode.classList.remove('filled','wrong');
+      document.getElementById('zone-'+prevZone).innerHTML=placeholder();
+    }
+  }
+
+  state[zoneId]=chipId;
+
+  const chip=document.getElementById('chip-'+chipId);
+  if(chip) chip.classList.add('used');
+
+  const zone=document.getElementById('zone-'+zoneId);
+  const node=document.getElementById('node-'+zoneId);
+  node.classList.add('filled');
+  node.classList.remove('wrong','correct-locked');
+  document.getElementById('badge-'+zoneId).textContent='';
+
+  const inner=document.createElement('div');
+  inner.className='placed-chip';
+  inner.textContent=PAIRS.find(p=>p.id===chipId).description;
+
+  const rmBtn=document.createElement('button');
+  rmBtn.className='remove-btn';
+  rmBtn.innerHTML='✕';
+  rmBtn.title='Remove';
+  rmBtn.addEventListener('click',()=>{
+    returnChip(chipId);
+    delete state[zoneId];
+    node.classList.remove('filled','wrong');
+    zone.innerHTML=placeholder();
+    updateProgress();
+    updateSubmitBtn();
+    hideFeedback();
+  });
+  inner.appendChild(rmBtn);
+  zone.innerHTML='';
+  zone.appendChild(inner);
+
+  updateProgress();
+  updateSubmitBtn();
+  hideFeedback();
+}
+
+function returnChip(chipId){
+  const c=document.getElementById('chip-'+chipId);
+  if(c) c.classList.remove('used');
+}
+
+function placeholder(){
+  return `<div class="drop-placeholder">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    Drop description here
+  </div>`;
+}
+
+// ── PROGRESS ─────────────────────────────────────
+
+function updateProgress(){
+  // Count only non-locked empty zones
+  const filledCount=Object.keys(state).length + Object.keys(correctLocked).length;
+  document.getElementById('placed-count').textContent=filledCount;
+  document.getElementById('footer-placed').textContent=filledCount;
+  const pct=PAIRS.length>0?(filledCount/PAIRS.length)*100:0;
+  document.getElementById('progress-bar').style.width=pct+'%';
+}
+
+function updateSubmitBtn(){
+  const allSlotsFilled =
+    Object.keys(state).length + Object.keys(correctLocked).length === PAIRS.length;
+  document.getElementById('btn-submit').disabled = !allSlotsFilled;
+}
+
+// ── CHECK ─────────────────────────────────────────
+// KEY LOGIC:
+// • Correct answers → lock in place permanently (green)
+// • Wrong answers   → highlighted red, returned to pool to retry
+// • The Easygenerator "complete" signal fires ONLY when ALL are correct
+// ─────────────────────────────────────────────────
+
+document.getElementById('btn-submit').addEventListener('click', checkAnswers);
+
+function checkAnswers(){
+  let wrongCount = 0;
+
+  PAIRS.forEach(pair=>{
+    // Skip already-locked correct ones
+    if(correctLocked[pair.id]) return;
+
+    const node = document.getElementById('node-'+pair.id);
+    const placedId = state[pair.id];
+
+    if(placedId === pair.id){
+      // ✅ CORRECT — lock it in
+      correctLocked[pair.id] = true;
+      delete state[pair.id];
+      node.classList.remove('wrong','filled');
+      node.classList.add('correct-locked');
+      document.getElementById('badge-'+pair.id).textContent='✓';
+      // Remove the ✕ button from the placed chip
+      const rm=node.querySelector('.remove-btn');
+      if(rm) rm.remove();
+      // Make placed text green
+      const placed=node.querySelector('.placed-chip');
+      if(placed) placed.style.color='var(--green)';
+
+    } else {
+      // ❌ WRONG — highlight, return chip to pool
+      wrongCount++;
+      node.classList.add('wrong');
+      node.classList.remove('filled');
+
+      // Return the chip to the sidebar pool
+      if(placedId) returnChip(placedId);
+      delete state[pair.id];
+
+      // Reset the zone after the shake animation
+      setTimeout(()=>{
+        node.classList.remove('wrong');
+        document.getElementById('zone-'+pair.id).innerHTML=placeholder();
+        updateProgress();
+        updateSubmitBtn();
+      }, 600);
+    }
+  });
+
+  if(wrongCount === 0){
+    // ✅ ALL CORRECT
+    showFeedback('success','All correct! Well done — you have matched every part correctly.');
+    document.getElementById('footer-msg').textContent='All correct! You may now continue.';
+    document.getElementById('btn-submit').disabled=true;
+    document.getElementById('btn-reset').style.display='none';
+    launchConfetti();
+
+    // 🔑 Signal Easygenerator — fires ONLY here, never on a wrong attempt
+    unlockEasygenerator();
+
+  } else {
+    // ❌ SOME WRONG
+    const kept = Object.keys(correctLocked).length;
+    showFeedback(
+      'wrong',
+      `${wrongCount} answer${wrongCount>1?'s were':' was'} incorrect and ${wrongCount>1?'have':'has'} been returned to the pool. ` +
+      (kept > 0 ? `${kept} correct match${kept>1?'es':''}  stay${kept===1?'s':''} locked in. ` : '') +
+      `Re-place the returned cards and try again.`
+    );
+    updateProgress();
+    updateSubmitBtn();
+  }
+}
+
+// ── FEEDBACK BANNER ──────────────────────────────
+
+function showFeedback(type, msg){
+  const el=document.getElementById('feedback-banner');
+  el.className='feedback-banner show '+(type==='success'?'success-banner':'wrong-banner');
+  el.innerHTML=`<strong>${type==='success'?'✓ Correct!':'✗ Some answers need fixing'}</strong>${msg}`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function hideFeedback(){
+  document.getElementById('feedback-banner').className='feedback-banner';
+}
+
+// ── RESET ────────────────────────────────────────
+
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  Object.keys(state).forEach(k=>delete state[k]);
+  Object.keys(correctLocked).forEach(k=>delete correctLocked[k]);
+  buildUI();
+});
+
+// ── CONFETTI ─────────────────────────────────────
+
+function launchConfetti(){
+  const container=document.getElementById('confetti-container');
+  container.innerHTML='';
+  const colors=['#1A6CF0','#0D7A4E','#B45309','#C0392B','#8B5CF6','#F59E0B'];
+  for(let i=0;i<80;i++){
+    const el=document.createElement('div');
+    el.className='confetti-piece';
+    el.style.left=Math.random()*100+'vw';
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    el.style.width=(Math.random()*8+4)+'px';
+    el.style.height=(Math.random()*8+4)+'px';
+    el.style.borderRadius=Math.random()>0.5?'50%':'2px';
+    el.style.animationDuration=(Math.random()*2+1.5)+'s';
+    el.style.animationDelay=(Math.random()*0.8)+'s';
+    container.appendChild(el);
+  }
+  setTimeout(()=>container.innerHTML='',4000);
+}
+
+// ══════════════════════════════════════════════════
+//  🔑  EASYGENERATOR GATE
+//
+//  This function fires ONLY when every single pair
+//  is correct. Until then Easygenerator never
+//  receives a completion signal, so the learner
+//  cannot advance in the course.
+// ══════════════════════════════════════════════════
+function unlockEasygenerator(){
+  const payload = { action:'answer', correct:true };
+
+  // Method 1 — egApi (legacy EG embed)
+  try{
+    if(window.egApi && typeof window.egApi.setAnswer==='function'){
+      window.egApi.setAnswer({ correct:true });
+    }
+  }catch(e){}
+
+  // Method 2 — postMessage object (standard Web Embed)
+  try{ window.parent.postMessage(payload,'*'); }catch(e){}
+
+  // Method 3 — postMessage JSON string (older EG builds)
+  try{ window.parent.postMessage(JSON.stringify(payload),'*'); }catch(e){}
+
+  // Method 4 — top frame (nested iframes)
+  try{ window.top.postMessage(payload,'*'); }catch(e){}
+
+  // Method 5 — custom DOM event fallback
+  try{
+    document.dispatchEvent(new CustomEvent('egAnswer',{
+      detail:payload, bubbles:true, composed:true
+    }));
+  }catch(e){}
+}
+
+// ── INIT ─────────────────────────────────────────
+buildUI();
+</script>
+</body>
+</html>
